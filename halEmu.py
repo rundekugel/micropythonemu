@@ -8,10 +8,9 @@ uncomplete
 import machine
 import tkinter as tk
 import time
-
+import threading
 
 # consts
- 
 
 # classes 
 class Pin:
@@ -21,7 +20,7 @@ class Pin:
   state = 0
   direction = 0 
   guiCb = None
-  pinNum = None
+  pinnum = None
   
   def __init__(self, pinnum, guiCb=None):
     self.pinnum=pinnum
@@ -53,7 +52,7 @@ class Gui:
   def __init__(self, callback=None, cbClose=None, pins = None, maxPins=30):
     self.cbClose = cbClose
         
-    self._gthread = _TGui(callback, self._cbGetGui, self._cbClose)
+    self._gthread = threading.Thread(target=_TGui, args=(callback, self._cbGetGui, self._cbClose))
     self._gthread.start()
 
     time.sleep(0.1)
@@ -64,53 +63,53 @@ class Gui:
     else:
       self.maxPins = maxPins
       for i in range(maxPins):
-        pins.append(Pin(i, _cbPin))
+        self.pins.append(Pin(i, self._cbPin))
         
-    for p in pins:
-      self._genGuiPin(p.pinNum)
+    for p in self.pins:
+      self._genGuiPin(p.pinnum)
         
   def _cbClose(self):
     running = 0
     if self.cbClose:
       self.cbClose()
     
-  def cbGetGui(self, gui):
+  def _cbGetGui(self, gui):
     self.gui = gui
     self.running = 1
     
-  def _genGuiPin(self,pinNum):
-    l = self.gui.tk.Label(self.gui.win, "P"+str(pinNum))
+  def _genGuiPin(self,pinnum):
+    l = self.gui.tk.Label(self.gui.win, text="P"+str(pinnum))
     l.pack()
     self.gui.pins.append(l)
     
-  def _getPin(self, pinNum):
+  def _getPin(self, pinnum):
     for pin in pins:
-      if pin.pinNum == pinNum:
+      if pin.pinnum == pinnum:
         return pin
     return None
     
   def _cbPin(self, pin):
     if not pin in self.pins: return
-    gp = self.gui.pin[pin.pinNum]
+    gp = self.gui.pin[pin.pinnum]
     gp["text"] = str(pin.state)
     
       
-  def getPinState(self, pinNum):
-    p = self._getPin(pinNum)
+  def getPinState(self, pinnum):
+    p = self._getPin(pinnum)
     if p: return p.state
     return None
     
-  def setPin(self, pinNum, hiLo):
-    p=self._getPin(pinNum)
+  def setPin(self, pinnum, hiLo):
+    p=self._getPin(pinnum)
     if not p: return
     p.set(hiLo)
     
-  def setPinDir(self, pinNum, inOut):
-    p=self._getPin(pinNum)
+  def setPinDir(self, pinnum, inOut):
+    p=self._getPin(pinnum)
     if not p: return
     p.setDir(hiLo)
     
-  def setPinText(self, pinNum, text):
+  def setPinText(self, pinnum, text):
     return
     
     
@@ -123,7 +122,7 @@ class _TGui:
     self.cbClose = cbClose
     self.callback = callback
     
-    self.win = tk.Tk()
+    self.win = tk.Tk(200,300)
     self.tk = tk
     
     if self.cbGetGui:
@@ -133,8 +132,8 @@ class _TGui:
     if cbClose:
       self.cbClose()
 
-  def addPin(self, pinNum):
-    l = self.tk.Label(self.win, "P"+str(pinNum))
+  def addPin(self, pinnum):
+    l = self.tk.Label(self.win, "P"+str(pinnum))
     l.pack()
     self.pins.append(l)  
 
