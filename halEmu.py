@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # dummy lib
 """
 library to emulate esp8266 hardware for micropython on a PC with python3
@@ -29,14 +30,14 @@ class Pin:
   def set(self,hiLo):
     if self.state == hiLo: return
     self.state = hiLo
-    if self._guiCb:
-      self._guiCb(self)    
+    # ~ if self._guiCb:
+      # ~ self._guiCb(self)    
       
   def setDir(self,inOut):
     if self.direction == inOut: return
     self.direction = inOut
-    if self._guiCb:
-      self._guiCb(self)
+    # ~ if self._guiCb:
+      # ~ self._guiCb(self)
       
   def get(self):
     return self.state
@@ -68,10 +69,12 @@ class Gui:
     else:
       self.maxPins = maxPins
       for i in range(maxPins):
-        self.pins.append(Pin(i, self._cbPin))
+        self.pins.append(Pin(i))
         
     for p in self.pins:
       self._genGuiPin(p.pinnum)
+
+    self._refreshallGuiPins()
         
   def _cbClose(self):
     self.running = 0
@@ -83,7 +86,7 @@ class Gui:
     self.running = 1
     
   def _genGuiPin(self,pinnum):
-    self.gui.addPin(pinnum, self._cbPinGui)
+    self.gui.addPin(pinnum, self._cbPinGui, self._cbPinGuiDir)
 
   def _getPin(self, pinnum):
     for pin in self.pins:
@@ -91,27 +94,46 @@ class Gui:
         return pin
     return None
 
-  def _cbPin(self, pin=None):
+  def _refreshGuiPin(self, pin):
+    """read vals from pin and write to gui"""
     if not pin in self.pins: return
     gp = self.gui.pins[pin.pinnum]
-    gp["text"] = "P:%s=%i Dir=%s"%(str(pin.pinnum),
-                  (pin.state),["in","out"][pin.direction])
-    gp["state"]=["disabled","normal"][pin.direction]
-    gp.var.set( pin.state)
+    gp["text"] = str(pin.pinnum)
+    gp["state"] = ["disabled", "normal"][pin.direction]
+    gp.var.set(pin.state)
+    gp.dir.set(pin.direction)
+    gp.d["text"]= ["i", "o"][pin.direction]
 
   def renamePin(self, pinnum, text):
     if pinnum < self.maxPins: return
     gp = self.gui.pins[pinnum]
     gp["text"] = str(text)
+    
   def _cbPinGui(self, pin=None):
-    self.refreshallpins()
-    if not pin in self.pins: return
-    gp = self.gui.pin[pin.pinnum]
-    gp["text"] = str(pin.state)
-  def refreshallpins(self):
+    """write gui vals to pins"""
+    self._refreshallpins()
+    return
+    #  todo: the following lines need parameter in callback
+    # if not pin in self.pins: return
+    # gp = self.gui.pin[pin.pinnum]
+    # gp["text"] = str(pin.state)
+
+  def _cbPinGuiDir(self):
+    self._refreshallpins()
+
+  def _refreshallpins(self):
+    """read values from gui and write to pins"""
     for p in self.pins:
       p.state = self.gui.pins[p.pinnum].var.get()
+      p.direction = self.gui.pins[p.pinnum].dir.get()
+      self._refreshGuiPin(p)
+      
+  def _refreshallGuiPins(self):
+    for p in self.pins:
+      self._refreshGuiPin(p)
+
   def getPinState(self, pinnum):
+    if not self.running: return None
     p = self._getPin(pinnum)
     if p: return p.state
     return None
@@ -120,11 +142,13 @@ class Gui:
     p=self._getPin(pinnum)
     if not p: return
     p.set(hiLo)
+    self._refreshGuiPin(p)
     
   def setPinDir(self, pinnum, inOut):
-    p=self._getPin(pinnum)
-    if not p: return
+    p = self._getPin(pinnum)
+    if not p:  return
     p.setDir(hiLo)
+    self._refreshGuiPin(p)
 
   def setPinText(self, pinnum, text):
     return
@@ -153,14 +177,15 @@ class _TGui:
     if cbClose:
       self.cbClose()
 
-  def addPin(self, pinnum, cb=None):
-    # l = self.tk.Label(self.win, text="P"+str(pinnum))
-    # l = self.tk.Checkbutton(self.win, text=str(pinnum), variable=var1).grid(row=0, sticky=W)
-    #o = self.tk.Checkbutton(self.win, text=str(pinnum), command=cb)
+  def addPin(self, pinnum, cb=None, cbDir=None):
     var=tk.IntVar()
-    o = tk.Checkbutton(self.win, variable=var,text=str(pinnum), command=cb)
-    o.pack(side=tk.LEFT)
+    o = tk.Checkbutton(self.win, variable=var, text=str(pinnum), command=cb)
+    o.grid(row=2, column=pinnum)
     o.var = var
+    dir = tk.IntVar()
+    o.d = tk.Checkbutton(self.win, variable=dir, text="i", command=cbDir)
+    o.d.grid(row=3, column=pinnum)
+    o.dir = dir
     self.pins.append(o)
     return
 
@@ -173,12 +198,14 @@ def test():
   g.setPin(2,1)
   s=g.getPinState(3)
   while(g.running):
-    time.sleep(0.1)
     s2=g.getPinState(3)
     if s!=s2:
       print("pin3 changed to %i."%s2)
       s=s2
-  
+    time.sleep(0.1)
+  time.sleep(0.5)
+  print("bye.")
+
 if __name__ == "__main__":
   test()
   
