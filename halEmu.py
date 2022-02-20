@@ -13,15 +13,22 @@ import threading
 
 # consts
 
+#self for one instace
+obj = None
+
 # classes 
 class Pin:
   """pin emulator"""
   DIRECTION_IN = 0
   DIRECTION_OUT = 1
+  IRQ_FALLING = 2
+  IRQ_RISING = 1
   state = 0
   direction = 0 
   _guiCb = None
   pinnum = None
+  irq = None
+  callback = None
   
   def __init__(self, pinnum, guiCb=None):
     self.pinnum=pinnum
@@ -30,8 +37,10 @@ class Pin:
   def set(self,hiLo):
     if self.state == hiLo: return
     self.state = hiLo
-    # ~ if self._guiCb:
-      # ~ self._guiCb(self)    
+    if self.irq and self.callback:
+      rs = [self.IRQ_RISING, self.IRQ_FALLING][hiLo==0]
+      if self.irq & rs:
+        self.callback(self.pinnum)
       
   def setDir(self,inOut):
     if self.direction == inOut: return
@@ -41,18 +50,19 @@ class Pin:
       
   def get(self):
     return self.state
-    
-    
+
+
 class Gui:
   """create a Gui in it's own thread"""
   running = 0
   cbClose = None
   pins = []
   gui = None
-  
+  blockoutpins = True
+
   def __init__(self, callback=None, cbClose=None, pins = None, maxPins=10):
     self.cbClose = cbClose
-        
+
     self._gthread = threading.Thread(target=_TGui, args=(callback, self._cbGetGui, self._cbClose))
     self._gthread.start()
 
@@ -78,8 +88,10 @@ class Gui:
         
   def _cbClose(self):
     self.running = 0
+    del self._gthread
     if self.cbClose:
       self.cbClose()
+    del self
     
   def _cbGetGui(self, gui):
     self.gui = gui
@@ -99,7 +111,8 @@ class Gui:
     if not pin in self.pins: return
     gp = self.gui.pins[pin.pinnum]
     gp["text"] = str(pin.pinnum)
-    gp["state"] = ["disabled", "normal"][pin.direction]
+    if self.blockoutpins:
+      gp["state"] = ["normal", "disabled"][pin.direction]
     gp.var.set(pin.state)
     gp.dir.set(pin.direction)
     gp.d["text"]= ["i", "o"][pin.direction]
@@ -124,7 +137,8 @@ class Gui:
   def _refreshallpins(self):
     """read values from gui and write to pins"""
     for p in self.pins:
-      p.state = self.gui.pins[p.pinnum].var.get()
+      state = self.gui.pins[p.pinnum].var.get()
+      p.set(state)
       p.direction = self.gui.pins[p.pinnum].dir.get()
       self._refreshGuiPin(p)
       
@@ -147,12 +161,17 @@ class Gui:
   def setPinDir(self, pinnum, inOut):
     p = self._getPin(pinnum)
     if not p:  return
-    p.setDir(hiLo)
+    p.setDir(inOut)
     self._refreshGuiPin(p)
 
   def setPinText(self, pinnum, text):
-    return
-    
+    self.renamePin(pinnum,text)
+
+  def setIrq(self, handler=None, pinnum=0, irqtype=Pin.IRQ_RISING|Pin.IRQ_FALLING):
+    p=self._getPin(pinnum)
+    if not p: return
+    p.irq = irqtype
+    p.callback = handler
     
     
 class _TGui:
@@ -192,10 +211,12 @@ class _TGui:
 # - for test only -
 def test():
   def cb1(*a,**k):
+    print(a,k)
     return
     
   g = Gui(cb1)
   g.setPin(2,1)
+  g.setIrq(cb1, 4, Pin.IRQ_RISING)
   s=g.getPinState(3)
   while(g.running):
     s2=g.getPinState(3)

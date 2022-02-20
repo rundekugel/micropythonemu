@@ -5,15 +5,8 @@ uncomplete
 2022 by lifesim.de
 """
 
-def collect():
-  return
-  
-def enable():
-  return
+from gc import *
 
-def disable():
-  return
-    
 def mem_alloc():
   return 1000
   
