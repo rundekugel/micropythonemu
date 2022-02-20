@@ -60,7 +60,7 @@ class Gui:
   gui = None
   blockoutpins = True
 
-  def __init__(self, callback=None, cbClose=None, pins = None, maxPins=10):
+  def __init__(self, callback=None, cbClose=None, pins=None, maxPins=10):
     self.cbClose = cbClose
 
     self._gthread = threading.Thread(target=_TGui, args=(callback, self._cbGetGui, self._cbClose))
@@ -177,6 +177,8 @@ class Gui:
 class _TGui:
   pins = []
   running=0
+  width = 400
+  height = 100
 
   def __init__(self, callback=None, cbGetGui=None, cbClose=None):
     self.cbGetGui = cbGetGui
@@ -184,7 +186,7 @@ class _TGui:
     self.callback = callback
     
     self.win = tk.Tk()
-    self.win.geometry("300x200")
+    self.win.geometry("%ix%i"%(self.width, self.height))
     self.tk = tk
     
     if self.cbGetGui:
@@ -223,9 +225,12 @@ def test():
     if s!=s2:
       print("pin3 changed to %i."%s2)
       s=s2
+    s7=g.getPinState(7)
+    g.setPin(7, 1-s7)
     time.sleep(0.1)
   time.sleep(0.5)
   print("bye.")
+  del g
 
 if __name__ == "__main__":
   test()
