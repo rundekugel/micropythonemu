@@ -58,13 +58,13 @@ class Pin:
 
   def irq(self, handler=None, trigger=2 | 1,
           priority=1, wake=None, hard=False):
-    halEmu.setIrq(handler, self.num, trigger)
+    halEmu.obj.setIrq(handler, self.num, trigger)
 
   def mode(self, mode=-1):
     """not for esp8266"""
     if not emuSettings.useGui: return
     if mode == self.OUT:
-      halEmu.obj.setPinDir(num, 1)
+      halEmu.obj.setPinDir(self.num, 1)
 
   def on(self):
     self.value(1)
