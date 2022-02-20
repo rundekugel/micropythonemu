@@ -6,5 +6,8 @@ uncomplete
 """
 
 from os import *
-  
+
+def dupterm(*a,**k):
+  return
+
 #eof

@@ -6,8 +6,18 @@ uncomplete
 """
 
 # consts
+import serial
+
+__version__ = "0.1.0"
 DEEPSLEEP_RESET  =0
- 
+
+import os
+if os.uname()[0] == "esp8266":
+  ismicropython = True
+  print("warning! don't use this on micropython. It's intended for use on python3!")
+else:
+  ismicropython = False
+
 import re as ure
 try:
   import halEmu
@@ -73,12 +83,15 @@ class Pin:
 
 
 class ADC:
-  def __init__(self,a):
-    return
+  def __init__(self,*a):
+    if emuSettings.useGui:
+      if not halEmu.obj:
+        halEmu.obj = halEmu.Gui(maxPins=10)
+
   def read_u16(self):
-    return 0
+    return halEmu.obj.getAdc()
   def read(self):
-    return 0
+    return halEmu.obj.getAdc()
     
 
 class Timer:
@@ -96,8 +109,21 @@ class RTC:
     return "0"
     
 class UART:
-  def __init__(self,id=0):
-    return
+  s = None
+  port = "/dev/ttyUSB0"  # linux
+  # port = "com31"  # windows
+  baudrate = 115200
+
+  def __init__(self, *args, port=None, baudrate=None, **kwargs):
+    # def __init__(self, port=None, baudrate=None):
+    if baudrate: self.baudrate = baudrate
+    s=serial.Serial(self.port, self.baudrate)
+  def read(self, cnt=None):
+    return s.read()
+  def write(self, data):
+    return s.write(data)
+  def close(self):
+    s.close()
 
 class WDT:
   def __init__(self):

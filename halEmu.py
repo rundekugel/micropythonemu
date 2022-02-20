@@ -173,12 +173,21 @@ class Gui:
     p.irq = irqtype
     p.callback = handler
     
-    
+  def getAdc(self, id=0):
+    """adc emulator for esp8266."""
+    try:
+      t = self.gui.adcs[0]["text"]
+      v = int(t,0)
+    finally:
+      return v
+
+
 class _TGui:
   pins = []
   running=0
   width = 400
   height = 100
+  adcs = []
 
   def __init__(self, callback=None, cbGetGui=None, cbClose=None):
     self.cbGetGui = cbGetGui
@@ -188,7 +197,13 @@ class _TGui:
     self.win = tk.Tk()
     self.win.geometry("%ix%i"%(self.width, self.height))
     self.tk = tk
-    
+
+    l= tk.Label(win, text="ADC0:")
+    l.grid(1,5)
+    ed = tk.Entry(text="-1")
+    ed.grid(3,5)
+    self.adcs.append(ed)
+
     if self.cbGetGui:
       self.cbGetGui(self)
     self.running = 1
