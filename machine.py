@@ -109,21 +109,31 @@ class RTC:
     return "0"
     
 class UART:
-  s = None
+  _s = None
   port = "/dev/ttyUSB0"  # linux
   # port = "com31"  # windows
   baudrate = 115200
+  timeout_ms = 0
+  stopbits=1
 
   def __init__(self, *args, port=None, baudrate=None, **kwargs):
     # def __init__(self, port=None, baudrate=None):
     if baudrate: self.baudrate = baudrate
-    s=serial.Serial(self.port, self.baudrate)
+    r= kwargs.get("timeout")
+    if r: self.timeout_ms = r
+    k={"port":self.port, "baudrate":self.baudrate,
+       "timeout":int(self.timeout_ms/1000), "stopbits":self.stopbits}
+    self._s=serial.Serial(**k)
   def read(self, cnt=None):
-    return s.read()
+    return self._s.read()
   def write(self, data):
-    return s.write(data)
+    if not isinstance(data, bytes):
+      data = data.encode()
+    return self._s.write(data)
+  def readline(self, cnt=None):
+    return self._s.readline(cnt)
   def close(self):
-    s.close()
+    self._s.close()
 
 class WDT:
   def __init__(self):
