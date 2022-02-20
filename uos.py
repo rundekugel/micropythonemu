@@ -7,6 +7,9 @@ uncomplete
 
 from os import *
 
+# consts
+__version__ = "0.1.0.0"
+
 def dupterm(*a,**k):
   return
 

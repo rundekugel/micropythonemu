@@ -12,6 +12,7 @@ import time
 import threading
 
 # consts
+__version__ = "0.1.0.0"
 
 #self for one instace
 obj = None

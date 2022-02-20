@@ -5,16 +5,17 @@ uncomplete
 2022 by lifesim.de
 """
 
-# consts
 import serial
 
-__version__ = "0.1.0"
-DEEPSLEEP_RESET  =0
+# consts
+__version__ = "0.1.0.1"
+DEEPSLEEP_RESET = 0
 
 import os
 if os.uname()[0] == "esp8266":
   ismicropython = True
-  print("warning! don't use this on micropython. It's intended for use on python3!")
+  print("warning! don't use this on micropython. "
+        "It's intended to be used on python3 !")
 else:
   ismicropython = False
 
