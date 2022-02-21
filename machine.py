@@ -12,13 +12,15 @@ __version__ = "0.1.0.1"
 DEEPSLEEP_RESET = 0
 
 import os
-if os.uname()[0] == "esp8266":
-  ismicropython = True
-  print("warning! don't use this on micropython. "
-        "It's intended to be used on python3 !")
-else:
-  ismicropython = False
 
+try:
+  if os.uname()[0] == "esp8266":
+    ismicropython = True
+    print("warning! don't use this on micropython. "
+          "It's intended to be used on python3 !")
+except:
+  ismicropython = False
+  
 import re as ure
 try:
   import halEmu
@@ -141,6 +143,15 @@ class WDT:
     return
         
 # funcs    
+def _isMicropython():
+  res = False
+  try:
+    if os.uname()[0] == "esp8266":
+      ismicropython = True
+      return 
+  finally:
+    return False
+    
 def reset():
   return
 def deepsleep():

@@ -23,8 +23,9 @@ def detach():
 def u1():
   detach()
   if not machine.ismicropython:
-    machine.UART.port = "/dev/tty"
-    machine.UART.port = "/dev/ttyUSB0"
+    # machine.UART.port = "/dev/tty"
+    machine.UART.port = "/dev/ttyUSB0"  # Linux
+    # machine.UART.port = "com31"   # Windows
   u=machine.UART(0,baudrate=115200, timeout=500)
   u.write("?"+os.linesep)
   doit=1
