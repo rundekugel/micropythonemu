@@ -8,18 +8,19 @@ uncomplete
 import serial
 
 # consts
-__version__ = "0.1.0.1"
+__version__ = "0.1.0.2"
 DEEPSLEEP_RESET = 0
 
 import os
 
+ismicropython = False
 try:
-  if os.uname()[0] == "esp8266":
+  if "ESP" in os.uname().machine:
     ismicropython = True
     print("warning! don't use this on micropython. "
           "It's intended to be used on python3 !")
 except:
-  ismicropython = False
+  pass
   
 import re as ure
 try:
