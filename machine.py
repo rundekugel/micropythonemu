@@ -12,6 +12,7 @@ __version__ = "0.1.0.2"
 DEEPSLEEP_RESET = 0
 
 import os
+import uuid
 
 ismicropython = False
 try:
@@ -159,7 +160,7 @@ def deepsleep():
   return
 def enable_irq(): return 0
 def disable_irq(): return 0
-def unique_id(): return 0
+def unique_id(): return uuid.uuid4().bytes
 def reset_cause(): return 0
 
 #eof
