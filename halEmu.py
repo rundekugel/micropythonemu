@@ -12,7 +12,7 @@ import time
 import threading
 
 # consts
-__version__ = "0.1.0.0"
+__version__ = "0.2.0.0"
 
 #self for one instace
 obj = None
@@ -54,7 +54,7 @@ class Pin:
 
 
 class Gui:
-  """create a Gui in it's own thread"""
+  """create a Gui. Don't forget to call update repaetedly"""
   running = 0
   cbClose = None
   pins = []
@@ -64,9 +64,9 @@ class Gui:
   def __init__(self, callback=None, cbClose=None, pins=None, maxPins=10):
     self.cbClose = cbClose
 
-    self._gthread = threading.Thread(target=_TGui, args=(callback, self._cbGetGui, self._cbClose))
-    self._gthread.start()
-
+    #self._gthread = threading.Thread(target=_TGui, args=(callback, self._cbGetGui, self._cbClose))
+    #self._gthread.start()
+    self.gui = _TGui(callback, self._cbGetGui, self._cbClose)
     timeout=9
     while(timeout):
       timeout-=1
@@ -89,7 +89,7 @@ class Gui:
         
   def _cbClose(self):
     self.running = 0
-    del self._gthread
+    # del self._gthread
     if self.cbClose:
       self.cbClose()
     del self
@@ -110,14 +110,20 @@ class Gui:
   def _refreshGuiPin(self, pin):
     """read vals from pin and write to gui"""
     if not pin in self.pins: return
-    gp = self.gui.pins[pin.pinnum]
-    gp["text"] = str(pin.pinnum)
-    if self.blockoutpins:
-      gp["state"] = ["normal", "disabled"][pin.direction]
-    gp.var.set(pin.state)
-    gp.dir.set(pin.direction)
-    gp.d["text"]= ["i", "o"][pin.direction]
-
+    if not self.running: return
+    if not self.gui.isAlive():
+      self.running = 0
+      return
+    try:
+      gp = self.gui.pins[pin.pinnum]
+      gp["text"] = str(pin.pinnum)
+      if self.blockoutpins:
+        gp["state"] = ["normal", "disabled"][pin.direction]
+      gp.var.set(pin.state)
+      gp.dir.set(pin.direction)
+      gp.d["text"]= ["i", "o"][pin.direction]
+    except:
+      pass
   def renamePin(self, pinnum, text):
     if pinnum < self.maxPins: return
     gp = self.gui.pins[pinnum]
@@ -210,11 +216,31 @@ class _TGui:
     if self.cbGetGui:
       self.cbGetGui(self)
     self.running = 1
-
-    self.win.mainloop()
+    return
+    # self.win.mainloop()
     self.running =0
     if cbClose:
       self.cbClose()
+
+  def isAlive(self):
+    return not not self.win.children
+
+  def update(self):
+    if self.running:
+      if not self.win.children:
+        self.running = 0
+        if self.cbClose:
+          self.cbClose()
+        return False
+      self.win.update()
+      return True
+    else:
+      if self.cbClose:
+        self.cbClose()
+
+  def stop(self):
+    self.running = 0
+    self.win.quit()
 
   def addPin(self, pinnum, cb=None, cbDir=None):
     var=tk.IntVar()
@@ -233,12 +259,16 @@ def test():
   def cb1(*a,**k):
     print(a,k)
     return
-    
+
   g = Gui(cb1)
   g.setPin(2,1)
   g.setIrq(cb1, 4, Pin.IRQ_RISING)
   s=g.getPinState(3)
   while(g.running):
+    if g.getPinState(9):
+      g.gui.stop()
+    if not g.gui.update():
+      break
     s2=g.getPinState(3)
     if s!=s2:
       print("pin3 changed to %i."%s2)
@@ -249,6 +279,7 @@ def test():
   time.sleep(0.5)
   print("bye.")
   del g
+
 
 if __name__ == "__main__":
   test()
