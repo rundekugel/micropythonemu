@@ -9,3 +9,5 @@ and, for example, use the class `Pin` with IRQ.
 This is mainly a proof of concept.
 
 Feel free to play with it and improve it.
+
+Tested on Linux, MacOS(R) and Windows(R)
