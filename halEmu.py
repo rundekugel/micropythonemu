@@ -256,7 +256,11 @@ class _TGui:
 
 # - for test only -
 def test():
+  """halEmu demo"""
+  print("halEmu demo")
+  print("use pin9 to stop or <ctrl>+<C> or just close the window") 
   def cb1(*a,**k):
+    """demo pin irq"""
     print(a,k)
     return
 
@@ -264,17 +268,27 @@ def test():
   g.setPin(2,1)
   g.setIrq(cb1, 4, Pin.IRQ_RISING)
   s=g.getPinState(3)
+  valueAdc = None
   while(g.running):
-    if g.getPinState(9):
+    if g.getPinState(9):  # pin 9 stops script
       g.gui.stop()
+    # repeatedly update needed  
     if not g.gui.update():
       break
+    # demo show pin state  
     s2=g.getPinState(3)
     if s!=s2:
       print("pin3 changed to %i."%s2)
       s=s2
+    # demo change pin from program  
     s7=g.getPinState(7)
     g.setPin(7, 1-s7)
+    # demo adc
+    vadc = g.getAdc()
+    if valueAdc != vadc:
+      print("ADC changed from %s to %i"%(str(valueAdc),vadc))
+      valueAdc = vadc 
+      
     time.sleep(0.1)
   time.sleep(0.5)
   print("bye.")
