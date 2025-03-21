@@ -13,6 +13,7 @@ DEEPSLEEP_RESET = 0
 
 import os
 import uuid
+import time
 
 ismicropython = False
 try:
@@ -60,9 +61,9 @@ class Pin:
     self.num = num
     if emuSettings.useGui:
       if not halEmu.obj:
-        halEmu.obj = halEmu.Gui(maxPins=10)
+        halEmu.obj = halEmu.Gui(maxPins=39)
       self.mode(mode)
-      if value: halEmu.obj.setPin(value)
+      if value: halEmu.obj.setPin(num,value)
     return
 
   def value(self, val=None):
@@ -88,6 +89,7 @@ class Pin:
 
 
 class ADC:
+  ATTN_11DB = None
   def __init__(self,*a):
     if emuSettings.useGui:
       if not halEmu.obj:
@@ -97,7 +99,10 @@ class ADC:
     return halEmu.obj.getAdc()
   def read(self):
     return halEmu.obj.getAdc()
-    
+  def atten(self, *args, **kargs):
+    return
+  def read_uv(self):
+    return halEmu.obj.getAdc()
 
 class Timer:
   def __init__(self,id=0):
@@ -108,20 +113,28 @@ class Timer:
     return
     
 class RTC:
+  memoryData = b""
   def __init__(self,id=0):
     return
   def datetime(self,i=0):
-    return "0"
+    return (1,1,1,1,1,1,1)
+  def memory(self, data=None):
+    if data:
+      self.memoryData = data
+    return self.memoryData
     
 class UART:
+  """redirect upython uart to dev/tty..."""
+  # todo: redirect to tcp/ip port for better debugging
   _s = None
   port = "/dev/ttyUSB0"  # linux
+  port = "/dev/pts/2"    # linux terminal
   # port = "com31"  # windows
   baudrate = 115200
   timeout_ms = 0
   stopbits=1
 
-  def __init__(self, *args, port=None, baudrate=None, **kwargs):
+  def __init__(self, port=None, baudrate=None, *args, **kwargs):
     # def __init__(self, port=None, baudrate=None):
     if baudrate: self.baudrate = baudrate
     r= kwargs.get("timeout")
@@ -139,11 +152,23 @@ class UART:
     return self._s.readline(cnt)
   def close(self):
     self._s.close()
+  def any(self):
+    return "sa"
 
 class WDT:
-  def __init__(self):
+  def __init__(self,  *args, **kargs):
     return
-        
+  def feed(self,  *args, **kargs):
+    return
+    
+class SoftI2C:
+   """dummy implementation"""    
+   def __init__(self, *args, **kargs):
+       return
+   def readfrom_mem(self, adr=0, len=1, *args, **kargs):
+     return bytes(len)
+   def readfrom(self, adr=0, len=1, *args, **kargs):
+     return bytes(len)
 # funcs    
 def _isMicropython():
   res = False
@@ -156,7 +181,8 @@ def _isMicropython():
     
 def reset():
   return
-def deepsleep():
+def deepsleep(ms=0, *args, **kargs):
+  time.sleep(ms/1000)
   return
 def enable_irq(): return 0
 def disable_irq(): return 0
