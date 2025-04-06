@@ -6,6 +6,7 @@ uncomplete
 """
 
 import serial
+import socket
 
 # consts
 __version__ = "0.1.0.2"
@@ -14,6 +15,7 @@ DEEPSLEEP_RESET = 0
 import os
 import uuid
 import time
+import threading
 
 ismicropython = False
 try:
@@ -25,15 +27,15 @@ except:
   pass
   
 import re as ure
+
+# classes
+class emuSettings:
+  useGui = True
 try:
   import halEmu
 except:
   halEmu = None
   emuSettings.useGui=False
-
-# classes
-class emuSettings:
-  useGui = True
 
 class PWM:
   def __init__(self,a):
@@ -56,15 +58,30 @@ class Pin:
   IRQ_HIGH_LEVEL=None
   num=None
   mode=None
-
+  maxPins =39
+  guiupdateinterval=0.2
+  _guiupdatethread = None
+  
   def __init__(self, num=0, mode=-1, value=0, *args, **k):
     self.num = num
     if emuSettings.useGui:
       if not halEmu.obj:
-        halEmu.obj = halEmu.Gui(maxPins=39)
+        halEmu.obj = halEmu.Gui(maxPins=self.maxPins)
+        # this doesn't work anymore, cause TK want's the main thread sind py3.9
+        # self._guiupdatethread = threading.Thread(target=self.doGuiupdateThread)
+        # self._guiupdatethread.start()
+        # halEmu.obj.gui.update() # once isn't enough. we must call it repeatedly
       self.mode(mode)
       if value: halEmu.obj.setPin(num,value)
     return
+
+  def doGuiupdateThread(self, interval=0.2):
+    while self._guiupdatethread:
+      halEmu.obj.gui.update()
+      time.sleep(self.guiupdateinterval)
+
+  def doGuiupdate(self):
+      halEmu.obj.gui.update()
 
   def value(self, val=None):
     if not emuSettings.useGui: return 0
@@ -129,6 +146,8 @@ class UART:
   _s = None
   port = "/dev/ttyUSB0"  # linux
   port = "/dev/pts/2"    # linux terminal
+  tcp = ("localhost",8888) # tcp/ip
+  client = None
   # port = "com31"  # windows
   baudrate = 115200
   timeout_ms = 0
@@ -141,17 +160,45 @@ class UART:
     if r: self.timeout_ms = r
     k={"port":self.port, "baudrate":self.baudrate,
        "timeout":int(self.timeout_ms/1000), "stopbits":self.stopbits}
-    self._s=serial.Serial(**k)
+    if self.tcp:
+      try:
+        self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client.connect(self.tcp)
+        self.client.settimeout(.2)
+      except:
+        pass
+    else:
+      self._s=serial.Serial(**k)
   def read(self, cnt=None):
-    return self._s.read()
+    if self.client:
+      r=b""
+      try:
+        r=self.client.recv(100)  #.decode()
+      finally:
+        return r
+    else:
+      return self._s.read()
   def write(self, data):
     if not isinstance(data, bytes):
       data = data.encode()
-    return self._s.write(data)
+    if self.client:
+      try:
+        return self.client.send(data)
+      except:
+        return 0
+    else:
+      try:
+        return self._s.write(data)
+      except:
+        return 0
   def readline(self, cnt=None):
     return self._s.readline(cnt)
   def close(self):
-    self._s.close()
+    if tcp:
+      self.client.close()
+      self.client=None
+    else:
+      self._s.close()
   def any(self):
     return "sa"
 
